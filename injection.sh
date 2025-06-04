@@ -1,7 +1,7 @@
 #!/bin/bash
 # injection.sh - centralized dotfiles environment setup
 
-# Source environment variables
+# Source environment variables, always loaded first
 if [ -f "$HOME/dotfiles/env.sh" ]; then
   source "$HOME/dotfiles/env.sh"
 fi

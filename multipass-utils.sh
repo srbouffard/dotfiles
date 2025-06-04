@@ -21,10 +21,10 @@ multipass_setup_envs() {
     echo "Set WORKSPACE_NAME=$WORKSPACE_NAME"
 }
 
-update_workspace_ssh_config() {
+multipass_update_ssh_config() {
   local help_msg=$(cat <<'EOF'
 Usage:
-  update_workspace_ssh_config [--debug|--help]
+  multipass_update_ssh_config [--debug|--help]
 
 Description:
   Updates (or creates) the SSH config entry for the Multipass VM defined by
@@ -154,7 +154,7 @@ EOF
 
   # Ensure SSH config exists
   if ! grep -q "^Host $WORKSPACE_NAME\$" ~/.ssh/config 2>/dev/null; then
-    echo "Missing config entry for $WORKSPACE_NAME...make sure to run update_workspace_ssh_config()"
+    echo "Missing config entry for $WORKSPACE_NAME...make sure to run multipass_update_ssh_config()"
   fi
 
   # VSCode remote command
