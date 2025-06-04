@@ -1,0 +1,7 @@
+# Ignore shell history files and editor backups
+*.swp
+*.bak
+*.tmp
+*.orig
+
+# Ignore logs or other temp files if needed
