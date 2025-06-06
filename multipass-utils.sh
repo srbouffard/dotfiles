@@ -4,6 +4,8 @@
 
 export WORKSPACE_SSH_KEY_NAME=multipass_vm_key
 
+alias mps='multipass shell ${WORKSPACE_NAME}'
+
 multipass_setup_envs() {
     export HOST_WORKSPACE_LOCATION="$PWD"
     export WORKSPACE_NAME="$(basename "$PWD")"
@@ -202,16 +204,18 @@ EOF
   fi
 
   echo "Launching Multipass instance '$WORKSPACE_NAME'..."
-  multipass launch --cpus 4 --memory 8G --disk 50G --name "$WORKSPACE_NAME" charm-dev || return 1
+  multipass launch -vvvv --cpus 4 --memory 8G --disk 50G --name "$WORKSPACE_NAME" charm-dev || return 1
 
   echo "Stopping instance '$WORKSPACE_NAME' to setup mount..."
   multipass stop "$WORKSPACE_NAME" || return 1
 
   echo "Mounting host workspace $HOST_WORKSPACE_LOCATION to /home/ubuntu/$WORKSPACE_NAME in VM..."
-  multipass mount --type native "$WORKSPACE_LOCATION" "$HOST_WORKSPACE_LOCATION:/home/ubuntu/$WORKSPACE_NAME" || return 1
+  multipass mount --type native "$HOST_WORKSPACE_LOCATION" "$WORKSPACE_NAME:/home/ubuntu/$WORKSPACE_NAME" || return 1
 
   echo "Starting instance '$WORKSPACE_NAME'..."
   multipass start "$WORKSPACE_NAME" || return 1
 
   echo "Multipass instance '$WORKSPACE_NAME' is ready."
+  multipass info $WORKSPACE_NAME
 }
+
