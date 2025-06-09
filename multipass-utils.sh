@@ -5,6 +5,8 @@
 export WORKSPACE_SSH_KEY_NAME=multipass_vm_key
 
 alias mps='multipass shell ${WORKSPACE_NAME}'
+alias mpi='multipass info ${WORKSPACE_NAME}'
+alias mpe='multipass_setup_envs()'
 
 multipass_setup_envs() {
     export HOST_WORKSPACE_LOCATION="$PWD"
@@ -215,7 +217,44 @@ EOF
   echo "Starting instance '$WORKSPACE_NAME'..."
   multipass start "$WORKSPACE_NAME" || return 1
 
+  echo "Authorizing SSH key..."
+  multipass_authorize_ssh_key || return 1
+
   echo "Multipass instance '$WORKSPACE_NAME' is ready."
   multipass info $WORKSPACE_NAME
 }
 
+_multipass_authorize_ssh_key() {
+  local help_msg=$(cat <<'EOF'
+multipass_authorize_ssh_key - authorize SSH key in a Multipass VM
+
+Usage:
+  multipass_authorize_ssh_key
+
+Description:
+  Copies the public key corresponding to WORKSPACE_SSH_KEY_NAME
+  into the authorized_keys of the WORKSPACE_NAME VM.
+EOF
+)
+
+  if [[ "$1" == "--help" ]]; then
+    echo "$help_msg"
+    return 0
+  fi
+
+  local pub_key_path="$HOME/.ssh/${WORKSPACE_SSH_KEY_NAME:-id_ed25519}.pub"
+
+  if [[ -z "$WORKSPACE_NAME" ]]; then
+    echo "ERROR: WORKSPACE_NAME is not set"
+    return 1
+  fi
+
+  if [[ ! -f "$pub_key_path" ]]; then
+    echo "ERROR: Public key not found at $pub_key_path"
+    return 1
+  fi
+
+  echo "Authorizing SSH key in instance '$WORKSPACE_NAME'..."
+
+  cat "$pub_key_path" | multipass exec "$WORKSPACE_NAME" -- tee -a /home/ubuntu/.ssh/authorized_keys > /dev/null
+}
