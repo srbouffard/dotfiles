@@ -2,28 +2,67 @@
 # multipass-utils.sh
 # Helper functions for Multipass VM SSH config and related tasks
 
-export WORKSPACE_SSH_KEY_NAME=multipass_vm_key
+export MULTIPASS_WORKSPACE_SSH_KEY_NAME="multipass_vm_key"
+export MULTIPASS_WORKSPACE_MARKER=".multipass-workspace"
 
 alias mps='multipass shell ${WORKSPACE_NAME}'
 alias mpi='multipass info ${WORKSPACE_NAME}'
 alias mpe='multipass_setup_envs()'
 
-multipass_setup_envs() {
-    export HOST_WORKSPACE_LOCATION="$PWD"
-    export WORKSPACE_NAME="$(basename "$PWD")"
+mark_as_multipass_workspace() {
+  # Mark the current directory as a Multipass workspace by creating the marker file.
+  # Suggests adding the marker to the project's .gitignore.
 
-    local ip
-    ip=$(multipass info "$WORKSPACE_NAME" 2>/dev/null | awk '/IPv4/ {print $2; exit}')
-    if [[ -n "$ip" ]]; then
-        export WORKSPACE_IP="$ip"
-        echo "Set WORKSPACE_IP=$WORKSPACE_IP"
-    else
-        echo "WARNING: Could not find IP for Multipass instance '$WORKSPACE_NAME'. Ignore if multipass instance not created yet."
+  local marker="${MULTIPASS_WORKSPACE_MARKER:-.multipass-workspace}"
+  touch "$marker"
+  echo "✔️ Marked as Multipass workspace with '$MULTIPASS_WORKSPACE_MARKER'"
+
+  if [ -d .git ]; then
+    if ! grep -q "$marker" .gitignore 2>/dev/null; then
+      echo "💡 Tip: add '$MULTIPASS_WORKSPACE_MARKER' to your .gitignore"
     fi
-
-    echo "Set HOST_WORKSPACE_LOCATION=$HOST_WORKSPACE_LOCATION"
-    echo "Set WORKSPACE_NAME=$WORKSPACE_NAME"
+  fi
 }
+
+multipass_setup_envs() {
+  # multipass_setup_envs - Export workspace-related env vars based on current directory.
+  #   Sets HOST_WORKSPACE_LOCATION, WORKSPACE_NAME, and optionally WORKSPACE_IP.
+
+  local cwd_basename
+  cwd_basename="$(basename "$PWD")"
+  
+  if [[ "$WORKSPACE_NAME" == "$cwd_basename" && "$HOST_WORKSPACE_LOCATION" == "$PWD" ]]; then
+    return 0  # Already set, no need to re-export or print
+  fi
+
+  export HOST_WORKSPACE_LOCATION="$PWD"
+  export WORKSPACE_NAME="$(basename "$PWD")"
+
+  local ip
+  ip=$(multipass info "$WORKSPACE_NAME" 2>/dev/null | awk '/IPv4/ {print $2; exit}')
+  if [[ -n "$ip" ]]; then
+      export WORKSPACE_IP="$ip"
+  else
+      echo "WARNING: Could not find IP for Multipass instance '$WORKSPACE_NAME'. Ignore if multipass instance not created yet."
+  fi
+
+  echo "🌐 Environment variables configured: WORKSPACE_NAME='$WORKSPACE_NAME', IP='$WORKSPACE_IP'"
+}
+
+_auto_multipass_env_setup() {
+  # Automatically call multipass_setup_envs if the current directory contains the marker.
+
+  if [[ -f "${MULTIPASS_WORKSPACE_MARKER:-.multipass-workspace}" && -z "$_MULTIPASS_ENV_ALREADY_CONFIGURED" ]]; then
+    echo "🔧 Detected Multipass workspace. Peforming environment config..."
+    multipass_setup_envs
+    export _MULTIPASS_ENV_ALREADY_CONFIGURED=1
+  fi
+}
+
+## Enable to auto workspace env configuration if enabled by `ENABLE_AUTO_WORKSPACE_ENV`
+if [[ "$ENABLE_AUTO_WORKSPACE_ENV" == "1" ]]; then
+  PROMPT_COMMAND="_auto_multipass_env_setup${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
+fi
 
 multipass_update_ssh_config() {
   local help_msg=$(cat <<'EOF'
@@ -34,7 +73,7 @@ Description:
   Updates (or creates) the SSH config entry for the Multipass VM defined by
   the environment variables:
     - WORKSPACE_NAME       : Multipass VM name (required)
-    - WORKSPACE_SSH_KEY_NAME : SSH private key filename in ~/.ssh/ (required)
+    - MULTIPASS_WORKSPACE_SSH_KEY_NAME : SSH private key filename in ~/.ssh/ (required)
     - WORKSPACE_IP         : IP address of the VM (optional; auto-detected)
 
 Options:
@@ -61,7 +100,7 @@ EOF
   fi
 
   local VM_NAME="${WORKSPACE_NAME:?WORKSPACE_NAME not set}"
-  local SSH_KEY_PATH="$HOME/.ssh/${WORKSPACE_SSH_KEY_NAME:?WORKSPACE_SSH_KEY_NAME not set}"
+  local SSH_KEY_PATH="$HOME/.ssh/${MULTIPASS_WORKSPACE_SSH_KEY_NAME:?MULTIPASS_WORKSPACE_SSH_KEY_NAME not set}"
   local SSH_CONFIG="$HOME/.ssh/config"
 
   if [ -z "$WORKSPACE_IP" ]; then
@@ -126,7 +165,7 @@ multipass_open_vscode() {
   Environment variables:
     WORKSPACE_NAME          Multipass instance name and SSH config Host
     WORKSPACE_IP            IP address of the Multipass instance
-    WORKSPACE_SSH_KEY_NAME  SSH private key filename under ~/.ssh/ (default: id_ed25519)
+    MULTIPASS_WORKSPACE_SSH_KEY_NAME  SSH private key filename under ~/.ssh/ (default: id_ed25519)
 EOF
 )
 
@@ -243,7 +282,7 @@ Usage:
   multipass_authorize_ssh_key
 
 Description:
-  Copies the public key corresponding to WORKSPACE_SSH_KEY_NAME
+  Copies the public key corresponding to MULTIPASS_WORKSPACE_SSH_KEY_NAME
   into the authorized_keys of the WORKSPACE_NAME VM.
 EOF
 )
@@ -253,7 +292,7 @@ EOF
     return 0
   fi
 
-  local pub_key_path="$HOME/.ssh/${WORKSPACE_SSH_KEY_NAME:-id_ed25519}.pub"
+  local pub_key_path="$HOME/.ssh/${MULTIPASS_WORKSPACE_SSH_KEY_NAME:-id_ed25519}.pub"
 
   if [[ -z "$WORKSPACE_NAME" ]]; then
     echo "ERROR: WORKSPACE_NAME is not set"
