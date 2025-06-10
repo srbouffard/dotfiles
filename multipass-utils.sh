@@ -206,7 +206,18 @@ EOF
   fi
 
   echo "Launching Multipass instance '$WORKSPACE_NAME'..."
-  multipass launch -vvvv --cpus 4 --memory 8G --disk 50G --name "$WORKSPACE_NAME" charm-dev || return 1
+  multipass launch 24.04 \
+  --name "$WORKSPACE_NAME" \
+  --cpus 4 \
+  --memory 8G \
+  --disk 50G \
+  --timeout 1800 \
+  -vvvv \
+  --cloud-init https://raw.githubusercontent.com/canonical/multipass/refs/heads/main/data/cloud-init-yaml/cloud-init-charm-dev.yaml \
+  || return 1
+
+  # blueprints are depricated
+  # multipass launch -vvvv --cpus 4 --memory 8G --disk 50G --name "$WORKSPACE_NAME" charm-dev || return 1
 
   echo "Stopping instance '$WORKSPACE_NAME' to setup mount..."
   multipass stop "$WORKSPACE_NAME" || return 1
