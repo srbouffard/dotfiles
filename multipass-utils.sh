@@ -19,7 +19,7 @@ mark_as_multipass_workspace() {
 
   if [ -d .git ]; then
     if ! grep -q "$marker" .gitignore 2>/dev/null; then
-      echo "💡 Tip: add '$MULTIPASS_WORKSPACE_MARKER' to your .gitignore"
+      echo "💡 Tip: add '$MULTIPASS_WORKSPACE_MARKER' to your GLOBAL .gitignore"
     fi
   fi
 }
