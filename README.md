@@ -59,6 +59,11 @@ export ENABLE_DOTFILES_FZF_CTRL_T=1     # Enable Ctrl-T to search dotfile functi
 export PROMPT_USER_LABEL="dave"         # Set a custom label for the prompt
 ```
 
+3. Don't forget to reload your shell to take these changes into account
+```bash
+sourceme
+```
+
 ## Features
 
 * **Automatic Workspace Configuration**: (Opt-in) When you `cd` into a directory marked with a `.multipass-workspace` file, the environment automatically configures itself by exporting `WORKSPACE_NAME` and `WORKSPACE_IP`.
