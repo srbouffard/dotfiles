@@ -4,4 +4,7 @@
 *.tmp
 *.orig
 
+# User-specific local environment overrides
+env.local.sh
+
 # Ignore logs or other temp files if needed

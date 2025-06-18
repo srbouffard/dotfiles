@@ -6,6 +6,11 @@ if [ -f "$HOME/dotfiles/env.sh" ]; then
   source "$HOME/dotfiles/env.sh"
 fi
 
+# Source user's local overrides if they exist
+if [ -f "$HOME/dotfiles/env.local.sh" ]; then
+  source "$HOME/dotfiles/env.local.sh"
+fi
+
 # Source dependencies
 if [ -f "$HOME/dotfiles/dependencies.sh" ]; then
   source "$HOME/dotfiles/dependencies.sh"

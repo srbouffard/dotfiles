@@ -2,7 +2,9 @@
 # core-utils.sh
 # Core Helper functions
 
-# Define pattern to fetch all function names defined in your dotfiles repo, ignore internal methods that start with `_`
+# This regex pattern finds function names in shell scripts. It looks for
+# strings that look like `function_name()` and ignores those starting with `_`.
+# \K resets the start of the reported match, so we only get the function name itself.
 DOTFILES_GREP_PATTERN='^\s*(function\s+)?\K[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\(\))'
 
 # List all function names

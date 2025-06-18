@@ -1,115 +1,138 @@
-Of course. Here is a comprehensive README file for your project, explaining its features, setup, and usage examples.
-
 # Dotfiles / Shell Utilities
 
 This repo contains personal shell utilities and helper functions designed to streamline development workflows, particularly for projects involving Multipass virtual machines.
 
-## Features
-
-  - **Automatic Workspace Configuration**: When you `cd` into a directory marked as a Multipass workspace, the environment automatically configures itself, exporting necessary variables like `WORKSPACE_NAME` and `WORKSPACE_IP`.
-  - **Multipass VM Management**: A suite of functions to simplify the entire lifecycle of a development VM:
-      - `multipass_create_dev_vm`: Creates a new Ubuntu VM with predefined resources, mounts your project directory, and gets it ready for development.
-      - `multipass_update_ssh_config`: Automatically adds or updates the SSH configuration for your VM, making it easy to connect.
-      - `multipass_open_vscode`: Opens your project directly in VS Code via a remote SSH connection to the Multipass VM.
-  - **Customizable Prompt**: Your shell prompt is enhanced to show the current user, working directory, and the active Git branch. You can customize the user label.
-  - **Helper Functions & Aliases**: Includes common aliases (`ll`, `gs`) and a set of shortcuts for Multipass commands (`mps`, `mpi`, `mpe`) to speed up your workflow.
-  - **FZF Integration**: Press `Ctrl+T` to get a fuzzy-searchable list of all custom functions available in your dotfiles for quick access.
+The system is designed to be modular. All features are disabled by default, allowing you to opt-in to the functionality you need without altering the core repository files.
 
 ## Prerequisites
 
-Before you begin, ensure you have the following software installed on your system:
+Before you begin, ensure you have the following software installed on your system (assuming you want all features enabled):
 
-  * **Git**: For cloning the repository.
-  * **Multipass**: For virtual machine management. You can find installation instructions on the official [Multipass website](https://multipass.run/install).
-  * **fzf**: For the fuzzy finder integration. It can be installed with package managers like Homebrew or `apt`:
-      * **macOS**: `brew install fzf`
-      * **Debian/Ubuntu**: `sudo apt install fzf`
-  * **Visual Studio Code**: Required for the `multipass_open_vscode` function. The `code` command-line tool must be installed in your system's PATH. You can enable this from within VS Code by opening the Command Palette (`Ctrl+Shift+P`), typing `Shell Command: Install 'code' command in PATH`, and pressing Enter.
+* **Git**: For cloning the repository.
+* **Multipass**: For virtual machine management.
+* **fzf**: For the fuzzy finder integration (`Ctrl+T`).
+* **Visual Studio Code**: The `code` command-line tool should be installed in your system's PATH.
 
 ## Setup
 
 1.  **Clone the repository**:
-
     ```bash
     git clone https://github.com/srbouffard/dotfiles.git ~/dotfiles
     ```
 
 2.  **Run the bootstrap script**: This will add a line to your `~/.bashrc` file to load the dotfiles environment whenever you open a new shell.
-
     ```bash
     bash ~/dotfiles/bootstrap_dotfiles.sh
     ```
 
-3.  **Reload your shell**:
+3.  **Configure your local environment**: Create a `env.local.sh` file to enable the features you want to use. See the **Configuration** section below for details.
 
+4.  **Reload your shell**:
     ```bash
     source ~/.bashrc
     ```
 
-Your shell is now equipped with the new functions and features.
+## Configuration
 
-## Usage Workflow Example
+This project separates default settings from user settings. The default configurations, with all features disabled, are in `env.sh`. You should not edit this file directly.
 
-Here’s a typical workflow for starting a new project using these utilities:
+To enable features and set your personal preferences, create a local override file.
 
-1.  **Create your project directory and navigate into it**:
-
+1.  **Create the local config file**:
     ```bash
-    mkdir my-new-project
-    cd my-new-project
+    touch ~/dotfiles/env.local.sh
+    ```
+    This file is already listed in `.gitignore`, so your local changes will not be tracked by Git.
+
+2.  **Enable features in `env.local.sh`**: Copy the variables for the features you want from `env.sh` into your `env.local.sh` file and change their value to `1`.
+
+**Example `env.local.sh`:**
+```bash
+# My local environment settings. This file is not tracked by Git.
+
+## Enabled Features
+export ENABLE_AUTO_WORKSPACE_ENV=1      # Automatically detect and configure Multipass workspaces
+export ENABLE_CUSTOM_PROMPT=1           # Use the custom prompt with git info
+export ENABLE_DOTFILES_FZF_CTRL_T=1     # Enable Ctrl-T to search dotfile functions
+
+## Custom Options
+export PROMPT_USER_LABEL="dave"         # Set a custom label for the prompt
+```
+
+## Features
+
+* **Automatic Workspace Configuration**: (Opt-in) When you `cd` into a directory marked with a `.multipass-workspace` file, the environment automatically configures itself by exporting `WORKSPACE_NAME` and `WORKSPACE_IP`.
+* **Multipass VM Management**: (Opt-in) A suite of functions to simplify the entire lifecycle of a development VM. See example below.
+* **Customizable Prompt**: (Opt-in) Your shell prompt is enhanced to show the current user, working directory, and the active Git branch.
+* **Helper Functions & Aliases**: A set of shortcuts for Multipass and Git commands to speed up your workflow.
+* **FZF Integration**: (Opt-in) Press `Ctrl+T` to get a fuzzy-searchable list of all custom functions available in your dotfiles.
+
+## Available Aliases and Functions
+
+The following aliases and functions are available once enabled/sourced.
+
+### Git
+| Command | Description |
+|---|---|
+| `gs` | `git status` |
+| `gco` | `git checkout` |
+| `gb` | `git branch` |
+| `gpull`| `git pull` |
+| `gpush`| `git push` |
+| `gd` | `git diff` |
+| `gl` | A much more readable, graphical log of your git history. |
+| `gacp "msg"` | Add all files, commit with a message, and push in one command. |
+
+### Multipass
+| Command | Description |
+|---|---|
+| `mps` | `multipass shell ${WORKSPACE_NAME}` |
+| `mpi` | `multipass info ${WORKSPACE_NAME}` |
+| `mpe` | `multipass_setup_envs()` |
+| `multipass_create_dev_vm` | Creates and sets up a new development VM for the current project. |
+| `multipass_update_ssh_config` | Updates your SSH config to easily connect to the project VM. |
+| `multipass_open_vscode` | Opens the project folder in VS Code via Remote-SSH. |
+
+### Navigation & System
+| Command | Description |
+|---|---|
+| `ll` | `ls -alF` |
+| `..` | `cd ..` |
+| `...` | `cd ../..` |
+| `sourceme` | Reloads your shell configuration by running `source ~/.bashrc`. |
+
+
+## Example Workflow: From Zero to VS Code
+
+Here is a step-by-step guide to setting up a new project. This example assumes you have enabled `ENABLE_AUTO_WORKSPACE_ENV` in your `env.local.sh` file.
+
+1.  **Create Your Project Directory**
+    Create a folder for your new project and navigate into it.
+    ```bash
+    mkdir my-new-project && cd my-new-project
     ```
 
-2.  **Mark it as a Multipass workspace**: This creates a `.multipass-workspace` file that the scripts use to detect the project type.
-
+2.  **Mark as a Multipass Workspace**
+    Run the following command to create a `.multipass-workspace` marker file. This allows the scripts to automatically identify this as a Multipass-enabled project.
     ```bash
     mark_as_multipass_workspace
     ```
+    After creating the marker, `cd` out of the directory and back in to trigger the automatic environment setup.
 
-3.  **Set up the environment**: The environment should configure automatically when you enter the directory. If not, you can trigger it manually. This will set the `WORKSPACE_NAME` and other variables based on the directory name.
-
-    ```bash
-    multipass_setup_envs
-    ```
-
-4.  **Create the development VM**: This command will launch and configure a new Multipass instance for your project.
-
+3.  **Create the Development VM**
+    This command will launch a new Multipass instance, name it after your project directory, mount your code, and authorize your SSH key.
     ```bash
     multipass_create_dev_vm
     ```
 
-5.  **Configure SSH**: This step updates your SSH config file so you can connect to the VM easily.
-
+4.  **Configure SSH**
+    This command updates your local `~/.ssh/config` file, allowing SSH clients and VS Code to find and connect to your new VM easily.
     ```bash
     multipass_update_ssh_config
     ```
 
-6.  **Connect and Develop**: You can now shell into your VM or open the project in VS Code.
-
+5.  **Open in VS Code**
+    You're all set. Run the following command to open your project folder in VS Code, connected directly to the development environment inside your VM.
     ```bash
-    # Shell into the VM
-    mps
-
-    # Or open the project directly in VS Code
     multipass_open_vscode
     ```
-
-## Customization
-
-You can easily customize these dotfiles:
-
-  * **Toggle Features**: Edit the `env.sh` file to enable or disable features like the FZF integration or the automatic workspace setup. You can also change your `PROMPT_USER_LABEL` here.
-  * **Add Your Own Tools**:
-      * Add new shell functions and aliases to `functions.sh`.
-      * Add Multipass-specific helpers to `multipass-utils.sh`.
-
-## File Overview
-
-  * `bootstrap_dotfiles.sh`: One-time setup script that injects the source command into `~/.bashrc`.
-  * `injection.sh`: The main entrypoint that sources all other scripts to set up the environment.
-  * `env.sh`: Contains environment variables for feature flags and customizations.
-  * `dependencies.sh`: Ensures dependencies like `fzf` are loaded correctly.
-  * `functions.sh`: A place for general-purpose aliases and custom functions.
-  * `core-utils.sh`: Core helper functions, including the FZF function list generator.
-  * `multipass-utils.sh`: A collection of powerful functions for managing Multipass VMs.
-  * `prompt.sh`: Defines the custom shell prompt's appearance and behavior.
-  * `.gitignore`: Standard file for ignoring temporary and local files in Git.

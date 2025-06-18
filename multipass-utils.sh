@@ -139,6 +139,12 @@ EOF
     return 0
   fi
 
+  # Backup the original config file before overwriting
+  if [ -f "$SSH_CONFIG" ]; then
+      cp "$SSH_CONFIG" "$SSH_CONFIG.bak"
+      echo "ℹ️  Backed up existing SSH config to $SSH_CONFIG.bak"
+  fi
+
   mv "$SSH_CONFIG.tmp" "$SSH_CONFIG"
   chmod 600 "$SSH_CONFIG"
 
@@ -197,7 +203,15 @@ EOF
 
   # Ensure SSH config exists
   if ! grep -q "^Host $WORKSPACE_NAME\$" ~/.ssh/config 2>/dev/null; then
-    echo "Missing config entry for $WORKSPACE_NAME...make sure to run multipass_update_ssh_config()"
+      echo "🔍 SSH config entry for '$WORKSPACE_NAME' is missing."
+      read -p "Would you like to run 'multipass_update_ssh_config' now? (y/n) " -n 1 -r
+      echo
+      if [[ $REPLY =~ ^[Yy]$ ]]; then
+          multipass_update_ssh_config
+      else
+          echo "Please run 'multipass_update_ssh_config' manually before proceeding."
+          return 1
+      fi
   fi
 
   # VSCode remote command
@@ -268,7 +282,7 @@ EOF
   multipass start "$WORKSPACE_NAME" || return 1
 
   echo "Authorizing SSH key..."
-  multipass_authorize_ssh_key || return 1
+  _multipass_authorize_ssh_key || return 1
 
   echo "Multipass instance '$WORKSPACE_NAME' is ready."
   multipass info $WORKSPACE_NAME
@@ -279,7 +293,7 @@ _multipass_authorize_ssh_key() {
 multipass_authorize_ssh_key - authorize SSH key in a Multipass VM
 
 Usage:
-  multipass_authorize_ssh_key
+  _multipass_authorize_ssh_key
 
 Description:
   Copies the public key corresponding to MULTIPASS_WORKSPACE_SSH_KEY_NAME
