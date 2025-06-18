@@ -9,7 +9,16 @@ alias mpi='multipass info ${WORKSPACE_NAME}'
 alias mpe='multipass_setup_envs'
 alias mpv='multipass_open_vscode'
 
-
+# A protected wrapper for 'multipass shell' that ensures a workspace is set.
+mps() {
+  if [ -n "$WORKSPACE_NAME" ]; then
+    multipass shell "$WORKSPACE_NAME"
+  else
+    echo "ERROR: No Multipass workspace is active." >&2
+    echo "Navigate to a workspace directory to use this command." >&2
+    return 1
+  fi
+}
 
 mark_as_multipass_workspace() {
   # Mark the current directory as a Multipass workspace by creating the marker file.
@@ -308,6 +317,9 @@ EOF
   echo "Authorizing SSH key..."
   _multipass_authorize_ssh_key || return 1
 
+  echo "Configuring global .gitignore inside the VM..."
+  _multipass_configure_vm_gitignore || return 1
+
   echo "Multipass instance '$WORKSPACE_NAME' is ready."
   multipass info $WORKSPACE_NAME
   echo
@@ -352,6 +364,35 @@ EOF
   cat "$pub_key_path" | multipass exec "$WORKSPACE_NAME" -- tee -a /home/ubuntu/.ssh/authorized_keys > /dev/null
 }
 
+# In multipass-utils.sh
+
+_multipass_configure_vm_gitignore() {
+  if [ -z "$WORKSPACE_NAME" ]; then
+    echo "ERROR: WORKSPACE_NAME not set. Cannot configure gitignore." >&2
+    return 1
+  fi
+
+  echo "Configuring global .gitignore inside the VM '$WORKSPACE_NAME'..."
+  # This command block ensures a global excludesfile is set and adds the marker to it.
+  local git_ignore_command="
+    set -e
+    GIT_IGNORE_FILE=\$(git config --global --get core.excludesFile || true)
+
+    if [ -z \"\$GIT_IGNORE_FILE\" ]; then
+        GIT_IGNORE_FILE=\"\$HOME/.gitignore_global\"
+        git config --global core.excludesFile \"\$GIT_IGNORE_FILE\"
+    fi
+    
+    touch \"\$GIT_IGNORE_FILE\"
+    grep -qxF '${MULTIPASS_WORKSPACE_MARKER}' \"\$GIT_IGNORE_FILE\" || echo '${MULTIPASS_WORKSPACE_MARKER}' >> \"\$GIT_IGNORE_FILE\"
+  "
+  if multipass exec "$WORKSPACE_NAME" -- bash -c "$git_ignore_command"; then
+      echo "✅ VM's global gitignore configured."
+  else
+      echo "⚠️  Could not configure global gitignore inside the VM."
+      return 1
+  fi
+}
 
 multipass_destroy_workspace() {
   local help_msg=$(cat <<'EOF'
