@@ -94,6 +94,7 @@ The following aliases and functions are available once enabled/sourced.
 | `mps` | `multipass shell ${WORKSPACE_NAME}` |
 | `mpi` | `multipass info ${WORKSPACE_NAME}` |
 | `mpe` | `multipass_setup_envs()` |
+| `mpv` | `multipass_open_vscode()` |
 | `multipass_create_dev_vm` | Creates and sets up a new development VM for the current project. |
 | `multipass_update_ssh_config` | Updates your SSH config to easily connect to the project VM. |
 | `multipass_open_vscode` | Opens the project folder in VS Code via Remote-SSH. |
@@ -101,7 +102,6 @@ The following aliases and functions are available once enabled/sourced.
 ### Navigation & System
 | Command | Description |
 |---|---|
-| `ll` | `ls -alF` |
 | `..` | `cd ..` |
 | `...` | `cd ../..` |
 | `sourceme` | Reloads your shell configuration by running `source ~/.bashrc`. |
