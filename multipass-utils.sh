@@ -7,8 +7,8 @@ export MULTIPASS_WORKSPACE_MARKER=".multipass-workspace"
 
 alias mps='multipass shell ${WORKSPACE_NAME}'
 alias mpi='multipass info ${WORKSPACE_NAME}'
-alias mpe='multipass_setup_envs()'
-alias mpv='multipass_open_vscode()'
+alias mpe='multipass_setup_envs'
+alias mpv='multipass_open_vscode'
 
 mark_as_multipass_workspace() {
   # Mark the current directory as a Multipass workspace by creating the marker file.
