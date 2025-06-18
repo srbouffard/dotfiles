@@ -267,18 +267,29 @@ EOF
   fi
 
   echo "Launching Multipass instance '$WORKSPACE_NAME'..."
-  multipass launch 24.04 \
-  --name "$WORKSPACE_NAME" \
-  --cpus 4 \
-  --memory 8G \
-  --disk 50G \
-  --timeout 1800 \
-  -vvvv \
-  --cloud-init https://raw.githubusercontent.com/canonical/multipass/refs/heads/main/data/cloud-init-yaml/cloud-init-charm-dev.yaml \
-  || return 1
+  local launch_output
+  launch_output=$(multipass launch 24.04 \
+    --name "$WORKSPACE_NAME" \
+    --cpus 4 \
+    --memory 8G \
+    --disk 50G \
+    --timeout 300 \
+    --cloud-init https://raw.githubusercontent.com/canonical/multipass/refs/heads/main/data/cloud-init-yaml/cloud-init-charm-dev.yaml 2>&1)
 
-  # blueprints are depricated
-  # multipass launch -vvvv --cpus 4 --memory 8G --disk 50G --name "$WORKSPACE_NAME" charm-dev || return 1
+  local launch_exit_code=$?
+
+  # Check if the launch command failed
+  if [ $launch_exit_code -ne 0 ]; then
+    # If it failed, check if the instance was still created (which happens on timeout)
+    if multipass info "$WORKSPACE_NAME" &>/dev/null; then
+      echo "⚠️  Multipass launch timed out, but the VM was created. Continuing with setup..."
+    else
+      # A more serious error occurred
+      echo "❌ ERROR: Multipass launch failed with the following error:"
+      echo "$launch_output"
+      return 1
+    fi
+  fi
 
   echo "Stopping instance '$WORKSPACE_NAME' to setup mount..."
   multipass stop "$WORKSPACE_NAME" || return 1
@@ -331,4 +342,66 @@ EOF
   echo "Authorizing SSH key in instance '$WORKSPACE_NAME'..."
 
   cat "$pub_key_path" | multipass exec "$WORKSPACE_NAME" -- tee -a /home/ubuntu/.ssh/authorized_keys > /dev/null
+}
+
+
+multipass_destroy_workspace() {
+  local help_msg=$(cat <<'EOF'
+Usage:
+  multipass_destroy_workspace
+
+Description:
+  Permanently deletes and purges the Multipass VM and removes the SSH
+  configuration associated with the current workspace.
+
+  This is a DESTRUCTIVE and IRREVERSIBLE operation.
+
+Requirements:
+  - $WORKSPACE_NAME: The name of the Multipass instance to delete.
+EOF
+)
+
+  if [[ "$1" == "--help" ]]; then
+    echo "$help_msg"
+    return 0
+  fi
+
+  local VM_NAME="${WORKSPACE_NAME:?WORKSPACE_NAME not set}"
+  local SSH_CONFIG="$HOME/.ssh/config"
+
+  echo " WARNING: This will permanently delete the Multipass VM named '$VM_NAME'."
+  echo " All data inside the VM will be lost. This action is irreversible."
+  read -p "Are you sure you want to continue? [y/N] " -n 1 -r
+  echo # Move to a new line
+
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo " Aborted by user."
+    return 1
+  fi
+
+  echo " Stopping instance '$VM_NAME'..."
+  multipass stop "$VM_NAME" &>/dev/null || true # Ignore errors if already stopped
+
+  echo " Deleting and purging instance '$VM_NAME'..."
+  if multipass delete --purge "$VM_NAME"; then
+      echo " Instance '$VM_NAME' purged."
+  else
+      echo "  Could not delete Multipass instance. It may have already been deleted."
+  fi
+
+  echo " Removing SSH config entry for '$VM_NAME'..."
+  if [ -f "$SSH_CONFIG" ]; then
+    # Use awk to print all lines except the block for the host
+    awk -v host="$VM_NAME" '
+      BEGIN {found=0}
+      $1 == "Host" && $2 == host {found=1; next}
+      found && $1 == "Host" {found=0}
+      !found {print}
+    ' "$SSH_CONFIG" > "$SSH_CONFIG.tmp" && mv "$SSH_CONFIG.tmp" "$SSH_CONFIG"
+    echo " SSH config entry removed."
+  else
+    echo "  SSH config file not found, skipping cleanup."
+  fi
+
+  echo " Workspace '$VM_NAME' has been fully destroyed."
 }

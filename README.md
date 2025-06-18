@@ -98,6 +98,7 @@ The following aliases and functions are available once enabled/sourced.
 | `multipass_create_dev_vm` | Creates and sets up a new development VM for the current project. |
 | `multipass_update_ssh_config` | Updates your SSH config to easily connect to the project VM. |
 | `multipass_open_vscode` | Opens the project folder in VS Code via Remote-SSH. |
+| `multipass_destroy_workspace` | Delete and purge the workspace's mp instance. |
 
 ### Navigation & System
 | Command | Description |
