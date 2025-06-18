@@ -5,10 +5,20 @@
 export MULTIPASS_WORKSPACE_SSH_KEY_NAME="multipass_vm_key"
 export MULTIPASS_WORKSPACE_MARKER=".multipass-workspace"
 
-alias mps='multipass shell ${WORKSPACE_NAME}'
 alias mpi='multipass info ${WORKSPACE_NAME}'
 alias mpe='multipass_setup_envs'
 alias mpv='multipass_open_vscode'
+
+# A protected wrapper for 'multipass shell' that ensures a workspace is set.
+mps() {
+  if [ -n "$WORKSPACE_NAME" ]; then
+    multipass shell "$WORKSPACE_NAME"
+  else
+    echo "ERROR: No Multipass workspace is active." >&2
+    echo "Navigate to a workspace directory to use this command." >&2
+    return 1
+  fi
+}
 
 mark_as_multipass_workspace() {
   # Mark the current directory as a Multipass workspace by creating the marker file.
