@@ -104,6 +104,13 @@ EOF
   local SSH_KEY_PATH="$HOME/.ssh/${MULTIPASS_WORKSPACE_SSH_KEY_NAME:?MULTIPASS_WORKSPACE_SSH_KEY_NAME not set}"
   local SSH_CONFIG="$HOME/.ssh/config"
 
+  echo "Checking for required SSH private key..."
+  if [[ ! -f "$SSH_KEY_PATH" ]]; then
+    echo "❌ ERROR: SSH private key not found at '$SSH_KEY_PATH'."
+    echo "Please create it using 'ssh-keygen' before running this command."
+    return 1
+  fi
+
   if [ -z "$WORKSPACE_IP" ]; then
     WORKSPACE_IP=$(multipass info "$VM_NAME" | awk '/IPv4/ { print $2 }')
     if [ -z "$WORKSPACE_IP" ]; then
@@ -172,7 +179,7 @@ multipass_open_vscode() {
   Environment variables:
     WORKSPACE_NAME          Multipass instance name and SSH config Host
     WORKSPACE_IP            IP address of the Multipass instance
-    MULTIPASS_WORKSPACE_SSH_KEY_NAME  SSH private key filename under ~/.ssh/ (default: id_ed25519)
+    MULTIPASS_WORKSPACE_SSH_KEY_NAME  SSH private key filename under ~/.ssh/
 EOF
 )
 
@@ -307,15 +314,17 @@ EOF
     return 0
   fi
 
-  local pub_key_path="$HOME/.ssh/${MULTIPASS_WORKSPACE_SSH_KEY_NAME:-id_ed25519}.pub"
+  echo "Checking for required SSH public key..."
+  local pub_key_path="$HOME/.ssh/${MULTIPASS_WORKSPACE_SSH_KEY_NAME:?MULTIPASS_WORKSPACE_SSH_KEY_NAME not set}.pub"
 
-  if [[ -z "$WORKSPACE_NAME" ]]; then
-    echo "ERROR: WORKSPACE_NAME is not set"
+  if [[ ! -f "$pub_key_path" ]]; then
+    echo "ERROR: SSH public key not found at '$pub_key_path'."
+    echo "Please create it using 'ssh-keygen' before running this command."
     return 1
   fi
 
-  if [[ ! -f "$pub_key_path" ]]; then
-    echo "ERROR: Public key not found at $pub_key_path"
+  if [[ -z "$WORKSPACE_NAME" ]]; then
+    echo "ERROR: WORKSPACE_NAME is not set"
     return 1
   fi
 

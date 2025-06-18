@@ -111,33 +111,47 @@ The following aliases and functions are available once enabled/sourced.
 
 Here is a step-by-step guide to setting up a new project. This example assumes you have enabled `ENABLE_AUTO_WORKSPACE_ENV` in your `env.local.sh` file.
 
-1.  **Create Your Project Directory**
-    Create a folder for your new project and navigate into it.
-    ```bash
-    mkdir my-new-project && cd my-new-project
-    ```
+**1. Create Your SSH Key (One-Time Setup)**
 
-2.  **Mark as a Multipass Workspace**
-    Run the following command to create a `.multipass-workspace` marker file. This allows the scripts to automatically identify this as a Multipass-enabled project.
-    ```bash
-    mark_as_multipass_workspace
-    ```
-    After creating the marker, `cd` out of the directory and back in to trigger the automatic environment setup.
+If you haven't already, you need to create the SSH key that the scripts will use. The default key name used by the scripts is `multipass_vm_key` as defined by MULTIPASS_WORKSPACE_SSH_KEY_NAME. Run the following command to generate it:
 
-3.  **Create the Development VM**
-    This command will launch a new Multipass instance, name it after your project directory, mount your code, and authorize your SSH key.
-    ```bash
-    multipass_create_dev_vm
-    ```
+```bash
+# This command creates a new, secure Ed25519 SSH key without a passphrase.
+ssh-keygen -t ed25519 -f "$HOME/.ssh/${MULTIPASS_WORKSPACE_SSH_KEY_NAME}" -N ""
+```
 
-4.  **Configure SSH**
-    This command updates your local `~/.ssh/config` file, allowing SSH clients and VS Code to find and connect to your new VM easily.
-    ```bash
-    multipass_update_ssh_config
-    ```
+**2. Create Your Project Directory**
 
-5.  **Open in VS Code**
-    You're all set. Run the following command to open your project folder in VS Code, connected directly to the development environment inside your VM.
-    ```bash
-    multipass_open_vscode
-    ```
+Create a folder for your new project and navigate into it.
+```bash
+mkdir my-new-project && cd my-new-project
+```
+
+**3. Mark as a Multipass Workspace**
+
+Run the following command to create a `.multipass-workspace` marker file. This allows the scripts to automatically identify this as a Multipass-enabled project.
+```bash
+mark_as_multipass_workspace
+```
+After creating the marker, `cd` out of the directory and back in to trigger the automatic environment setup.
+
+**4. Create the Development VM**
+
+This command will launch a new Multipass instance, name it after your project directory, mount your code, and authorize your SSH key.
+```bash
+multipass_create_dev_vm
+```
+
+**5. Configure SSH**
+
+This command updates your local `~/.ssh/config` file, allowing SSH clients and VS Code to find and connect to your new VM easily.
+```bash
+multipass_update_ssh_config
+```
+
+**6. Open in VS Code**
+
+You're all set. Run the following command to open your project folder in VS Code, connected directly to the development environment inside your VM.
+```bash
+multipass_open_vscode
+```
