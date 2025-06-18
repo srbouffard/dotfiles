@@ -9,16 +9,7 @@ alias mpi='multipass info ${WORKSPACE_NAME}'
 alias mpe='multipass_setup_envs'
 alias mpv='multipass_open_vscode'
 
-# A protected wrapper for 'multipass shell' that ensures a workspace is set.
-mps() {
-  if [ -n "$WORKSPACE_NAME" ]; then
-    multipass shell "$WORKSPACE_NAME"
-  else
-    echo "ERROR: No Multipass workspace is active." >&2
-    echo "Navigate to a workspace directory to use this command." >&2
-    return 1
-  fi
-}
+
 
 mark_as_multipass_workspace() {
   # Mark the current directory as a Multipass workspace by creating the marker file.
@@ -42,22 +33,26 @@ multipass_setup_envs() {
   local cwd_basename
   cwd_basename="$(basename "$PWD")"
   
-  if [[ "$WORKSPACE_NAME" == "$cwd_basename" && "$HOST_WORKSPACE_LOCATION" == "$PWD" ]]; then
-    return 0  # Already set, no need to re-export or print
+  if [[ "$WORKSPACE_NAME" != "$cwd_basename" || "$HOST_WORKSPACE_LOCATION" != "$PWD" ]]; then
+    export HOST_WORKSPACE_LOCATION="$PWD"
+    export WORKSPACE_NAME="$cwd_basename"
+    echo "🌐 Workspace set to '$WORKSPACE_NAME'"
   fi
+
 
   export HOST_WORKSPACE_LOCATION="$PWD"
   export WORKSPACE_NAME="$(basename "$PWD")"
 
-  local ip
-  ip=$(multipass info "$WORKSPACE_NAME" 2>/dev/null | awk '/IPv4/ {print $2; exit}')
-  if [[ -n "$ip" ]]; then
-      export WORKSPACE_IP="$ip"
-  else
-      echo "WARNING: Could not find IP for Multipass instance '$WORKSPACE_NAME'. Ignore if multipass instance not created yet."
+  if [[ -z "$WORKSPACE_IP" && -n "$WORKSPACE_NAME" ]]; then
+    local ip
+    ip=$(multipass info "$WORKSPACE_NAME" 2>/dev/null | awk '/IPv4/ {print $2; exit}')
+    if [[ -n "$ip" ]]; then
+        export WORKSPACE_IP="$ip"
+        echo "🌐 IP address for '$WORKSPACE_NAME' set to '$WORKSPACE_IP'"
+    else
+        echo "⚠️  Could not find IP for Multipass instance '$WORKSPACE_NAME'. Ignore if instance not created yet."
+    fi
   fi
-
-  echo "🌐 Environment variables configured: WORKSPACE_NAME='$WORKSPACE_NAME', IP='$WORKSPACE_IP'"
 }
 
 _auto_multipass_env_setup() {
@@ -315,6 +310,9 @@ EOF
 
   echo "Multipass instance '$WORKSPACE_NAME' is ready."
   multipass info $WORKSPACE_NAME
+  echo
+
+  multipass_setup_envs
 }
 
 _multipass_authorize_ssh_key() {
